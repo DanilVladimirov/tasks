@@ -1,0 +1,22 @@
+{% extends 'postsapp/base.html' %}
+{% load static %}
+{% block title %}
+    Создать
+{% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'postsapp/css/start-page-style.css' %}">
+{% endblock %}
+
+{% block body %}
+    <div class="title-page">Создание публикации</div>
+    {% if form.errors %}
+        <div class="error-msg">Произошла ошибка :(</div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" id="form-add-pub">
+        {% csrf_token %}
+        <input type="text" placeholder="тема" name="title">
+        <input type="file" accept="image/*" name="img">
+        <textarea placeholder="текст" name="text"></textarea>
+        <button type="submit">опубликовать</button>
+    </form>
+{% endblock %}

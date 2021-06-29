@@ -1,0 +1,31 @@
+{% extends 'postsapp/base.html' %}
+
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'usersapp/css/register-page-style.css' %}">
+{% endblock %}
+
+{% block body %}
+    {% if form.errors %}
+        {% for field in form %}
+            {% for error in field.errors %}
+                <div class="message type-error">
+                    <strong>{{ error|escape }}</strong>
+                </div>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <div class="message type-error">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <form method="post" class="form-register">
+        {% csrf_token %}
+        <div>отсутствует аккаунт ? - <a href="{% url 'reg-page' %}">зарегистрироваться</a></div>
+        <input type="text" name="username" placeholder="логин" required>
+        <input type="password" name="password" placeholder="пароль" required>
+        <button>ввойти</button>
+        <div><a href="{% url 'password_reset' %}">забыли пароль ?</a></div>
+    </form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'postsapp/base.html' %}
+
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'postsapp/css/start-page-style.css' %}">
+{% endblock %}
+
+{% block body %}
+    <div class="title-page">Редактирование публикации</div>
+    <form method="post" enctype="multipart/form-data" id="form-add-pub">
+        {% csrf_token %}
+        <input type="text" placeholder="тема" name="title" value="{{ pub.title }}">
+        <input type="file" accept="image/*" name="img" value="{{ pub.img.url }}">
+        <textarea placeholder="текст" name="text">{{ pub.text }}</textarea>
+        <button type="submit">изменить</button>
+    </form>
+{% endblock %}

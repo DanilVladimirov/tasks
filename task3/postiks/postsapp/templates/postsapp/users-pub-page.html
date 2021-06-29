@@ -1,0 +1,95 @@
+{% extends 'postsapp/base.html' %}
+
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'postsapp/css/start-page-style.css' %}">
+{% endblock %}
+
+{% block body %}
+    <div class="title-page">Мои публикации</div>
+    {% if not pubs %}
+        <div style="font-size: 20px;font-weight: bold;color: #9e9e9e;text-align: center;">Пусто :(</div>
+    {% endif %}
+    <div id="pubs">
+        {% for pub in pubs %}
+            <div class="pub" id="pub-{{ pub.id }}">
+                <div>
+                    <button onclick="del_pub({{ pub.id }})" class="button-delete"><i class="fas fa-trash-alt"></i>
+                        удалить
+                    </button>
+                    <button class="button-create" style="width: 120px;"
+                            onclick="location.href='{% url 'edit-pub-page' pub.id %}'">
+                        редактировать
+                    </button>
+                </div>
+                <div class="pub-title">{{ pub.title }}</div>
+                <div class="pub-info">{{ pub.user.first_name }} {{ pub.user.last_name }} {{ pub.date|date:'Y-m-d H:i' }}</div>
+                <img src="{{ pub.img.url }}">
+                <div class="pub-text">{{ pub.text }}</div>
+                <div>
+                    {% if request.user.is_authenticated %}
+                        <div class="create-comment">
+                            <textarea name="comment" id="comment-{{ pub.id }}"></textarea>
+                            <button onclick="add_comment({{ pub.id }})">отправить</button>
+                        </div>
+                    {% endif %}
+                    <div id="comments-{{ pub.id }}">
+                        {% for comm in pub.comment.all|dictsortreversed:"id" %}
+                            <div class="comm">
+                                <div class="comm-author">{{ comm.author.first_name }} {{ comm.author.last_name }}</div>
+                                <div>{{ comm.text }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function add_comment(id_pub) {
+            var id_comment = 'comment-' + id_pub;
+            var comment_text = $('#' + id_comment).val();
+            document.getElementById(id_comment).value = '';
+            $.ajax({
+                type: 'POST', url: '{% url 'add-comment' %}',
+                data: {'csrfmiddlewaretoken': csrf_token, 'comment': comment_text, 'pubid': id_pub},
+                dataType: 'json',
+                cache: false,
+                success: function (response) {
+                    if (response.success) {
+                        var id_comments = 'comments-' + id_pub;
+                        $new_comm = $('<div class="comm"><div class="comm-author">{{ request.user.first_name }} {{ request.user.last_name }}</div>' +
+                            '<div>' + comment_text + '</div></div>');
+                        var comms = document.getElementById(id_comments);
+                        var first = comms.childNodes[0];
+                        if (first == null) {
+                            $new_comm.appendTo('#' + id_comments);
+                        } else {
+                            $new_comm.insertBefore(first);
+                        }
+                    } else {
+
+                    }
+                }
+            });
+        }
+
+        function del_pub(pubid) {
+            $.ajax({
+                type: 'POST', url: '{% url "del-pub" %}',
+                data: {'csrfmiddlewaretoken': csrf_token, 'pubid': pubid},
+                dataType: 'json',
+                cache: false,
+                success: function (response) {
+                    if (response.success) {
+                        var pub = "#pub-" + pubid;
+                        $(pub).remove();
+                    } else {
+
+                    }
+                }
+            });
+        }
+    </script>
+{% endblock %}

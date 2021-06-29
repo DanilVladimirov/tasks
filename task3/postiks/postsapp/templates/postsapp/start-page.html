@@ -1,0 +1,170 @@
+{% extends 'postsapp/base.html' %}
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'postsapp/css/start-page-style.css' %}">
+    <script src="{% static 'postsapp/js/scroll_control.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+    {% if request.user.is_authenticated %}
+        <div id="create-pub-popup">
+            <form method="post" enctype="multipart/form-data" id="form-add-pub" style="margin-top: 100px;">
+                <div class="title-page">Создание публикации</div>
+                {% csrf_token %}
+                <input type="text" placeholder="тема" name="title">
+                <input type="file" accept="image/*" name="img">
+                <textarea placeholder="текст" name="text"></textarea>
+                <button type="submit">опубликовать</button>
+            </form>
+        </div>
+    {% endif %}
+    <div class="pubs-title">
+        <div class="title">Публикации пользователей</div>
+        <div style="display: flex;">
+            {% if request.user.is_authenticated %}
+                <button class="button-create" onclick="open_create_pub_popup()"><i class="far fa-plus-square"></i>
+                    Cоздать
+                </button>
+            {% else %}
+                <div>Тоже хочешь поделиться своими мыслями ? - <a href="{% url 'login-page' %}">Ввойти</a></div>
+            {% endif %}
+        </div>
+        <hr>
+    </div>
+    <div id="pubs">
+        {% for pub in pubs %}
+            <div class="pub" id="pub-{{ pub.id }}">
+                <div>
+                    {% if request.user.is_superuser or pub.user == request.user %}
+                        <button onclick="del_pub({{ pub.id }})" class="button-delete"><i class="fas fa-trash-alt"></i>
+                            удалить
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="pub-title">{{ pub.title }}</div>
+                <div class="pub-info">{{ pub.user.first_name }} {{ pub.user.last_name }} {{ pub.date|date:'Y-m-d H:i' }}</div>
+                <img src="{{ pub.img.url }}">
+                <div class="pub-text">{{ pub.text }}</div>
+                <div>
+                    {% if request.user.is_authenticated %}
+                        <div class="create-comment">
+                            <textarea name="comment" id="comment-{{ pub.id }}"></textarea>
+                            <button onclick="add_comment({{ pub.id }})">отправить</button>
+                        </div>
+                    {% endif %}
+                    <div id="comments-{{ pub.id }}">
+                        {% for comm in pub.comment.all|dictsortreversed:"id" %}
+                            <div class="comm">
+                                <div class="comm-author">{{ comm.author.first_name }} {{ comm.author.last_name }}</div>
+                                <div>{{ comm.text }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        var modal = document.getElementById("create-pub-popup");
+
+        window.onclick = function (event) {
+
+            if (event.target == modal) {
+                modal.style.display = "none";
+                enableScrolling()
+            }
+        }
+
+        function open_create_pub_popup() {
+            if (modal.style.display === "block") {
+                modal.style.display = "none";
+                enableScrolling()
+            } else {
+                modal.style.display = "block";
+                disableScrolling()
+            }
+        }
+
+        $('#form-add-pub').submit(function (e) {
+            e.preventDefault();
+            $form = $(this)
+            var formData = new FormData(this);
+            $.ajax({
+                url: {% url 'add-pub' %},
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    console.log(response)
+                    if (response.success) {
+                        open_create_pub_popup()
+                        $('#form-add-pub')[0].reset();
+                        $new_pub = $('<div class="pub" id="pub-' + response.pub_id + '">' +
+                            '<div><button onclick = "del_pub(' + response.pub_id + ')" class="button-delete">' +
+                            '<i class="fas fa-trash-alt"></i> удалить</button></div><div class="pub-title">' +
+                            response.title + '</div><div class="pub-info">' + response.first_name + ' ' + response.last_name +
+                            ' ' + response.date + '</div>' + '<img src=' + response.img + '>' +
+                            '<div class="pub-text">' + response.text + '</div>' + '<div>' +
+                            '<div class="create-comment"><textarea name="comment" id="comment-' + response.pub_id + '">' +
+                            '</textarea> <button onclick="add_comment(' + response.pub_id + ')">отправить</button></div>' +
+                            '<div id="comments-' + response.pub_id + '"></div> </div></div>')
+                        var pubs = document.getElementById('pubs');
+                        var first = pubs.childNodes[0];
+                        $new_pub.insertBefore(first)
+                    } else {
+
+                    }
+                },
+                cache: false,
+                contentType: false,
+                processData: false
+            });
+        });
+
+        function del_pub(pubid) {
+            $.ajax({
+                type: 'POST', url: '{% url "del-pub" %}',
+                data: {'csrfmiddlewaretoken': csrf_token, 'pubid': pubid},
+                dataType: 'json',
+                cache: false,
+                success: function (response) {
+                    if (response.success) {
+                        var pub = "#pub-" + pubid;
+                        $(pub).remove();
+                    } else {
+
+                    }
+                }
+            });
+        }
+
+        function add_comment(id_pub) {
+            var id_comment = 'comment-' + id_pub;
+            var comment_text = $('#' + id_comment).val();
+            document.getElementById(id_comment).value = '';
+            $.ajax({
+                type: 'POST', url: '{% url 'add-comment' %}',
+                data: {'csrfmiddlewaretoken': csrf_token, 'comment': comment_text, 'pubid': id_pub},
+                dataType: 'json',
+                cache: false,
+                success: function (response) {
+                    if (response.success) {
+
+                        var id_comments = 'comments-' + id_pub;
+                        $new_comm = $('<div class="comm"><div class="comm-author">{{ request.user.first_name }} {{ request.user.last_name }}</div>' +
+                                      '<div>' + comment_text + '</div></div>');
+                        var comms = document.getElementById(id_comments);
+                        var first = comms.childNodes[0];
+                        if (first == null) {
+                            $new_comm.appendTo('#' + id_comments);
+                        } else {
+                            $new_comm.insertBefore(first);
+                        }
+                    } else {
+
+                    }
+                }
+            });
+        }
+    </script>
+{% endblock %}
