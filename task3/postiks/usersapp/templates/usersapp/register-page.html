@@ -22,7 +22,7 @@
     {% endif %}
     <form method="post" class="form-register">
         {% csrf_token %}
-        <div>есть аккаунт ? - <a href="{% url 'login-page' %}">ввойти</a></div>
+        <div>есть аккаунт ? - <a href="{% url 'login-page' %}">войти</a></div>
         <input type="text" name="username" placeholder="логин" required>
         <input type="text" name="first_name" placeholder="имя" required>
         <input type="text" name="last_name" placeholder="фамилия" required>
