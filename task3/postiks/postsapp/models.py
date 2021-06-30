@@ -14,6 +14,10 @@ def file_path(instance, filename):
 
 
 class Publication(models.Model):
+    class Meta:
+        verbose_name = 'Публикация'
+        verbose_name_plural = 'Публикации'
+    
     title = models.CharField(max_length=200,
                              default='no-title')
     text = models.TextField(default='no-text')
